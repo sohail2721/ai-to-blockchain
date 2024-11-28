@@ -33,6 +33,9 @@ def train_model():
         'intercept': model.intercept_.tolist()
     }
     return result
+import random
+from datetime import datetime
+import requests
 
 def broadcast_result(result, nodes):
     print(f"Broadcasting result: {result}")  # Print the result being broadcasted
@@ -41,6 +44,9 @@ def broadcast_result(result, nodes):
     broadcast_time = None
     success_nodes = []
     errors = []
+
+    # Shuffle the nodes list to randomize the order
+    random.shuffle(nodes)
 
     for node in nodes:
         try:
@@ -53,6 +59,7 @@ def broadcast_result(result, nodes):
             
             if response.status_code == 200:
                 print(f"Node {node} accepted the result")
+                success_nodes.append(node)  # Add successful node to the list of success_nodes
                 if not first_broadcasted_node:  # Set the first broadcasted node
                     first_broadcasted_node = node
                     broadcast_time = timestamp
@@ -66,7 +73,8 @@ def broadcast_result(result, nodes):
     if errors:
         print(f"Errors: {', '.join(errors)}")
     
-    return first_broadcasted_node, broadcast_time
+    return first_broadcasted_node, broadcast_time, success_nodes, errors
+
 
 def start_training(training_cycles=5):
     nodes = ["node-1", "node-2", "node-3"]  # List of all node addresses

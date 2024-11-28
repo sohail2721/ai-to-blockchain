@@ -26,17 +26,27 @@ def test_connection():
 @app.route('/validate_result', methods=['POST'])
 def validate_result():
     data = request.get_json()
-    
+
     # Print incoming request data in a structured manner
     print("\n--- Validating Result ---")
     print(f"Received data: {data}")
-    
+
     result = data['result']
     broadcasted_at = data['timestamp']
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Simple validation logic to check if the result format is correct
+
+    # Validation logic: Check if the result format is correct
     if isinstance(result['coefficients'], list) and isinstance(result['intercept'], (int, float)):
+        
+        # Additional validation of the coefficients and intercept (example range check)
+        if not all(isinstance(coef, (int, float)) for coef in result['coefficients']):
+            print("Invalid coefficient values received.")
+            return jsonify({"status": "invalid", "error": "Invalid coefficients"}), 400
+        
+        if not (-1e6 < result['intercept'] < 1e6):
+            print("Invalid intercept value received.")
+            return jsonify({"status": "invalid", "error": "Invalid intercept"}), 400
+
         # Store the result with timestamp to track when the node received it
         pending_transactions.append({
             'result': result,
@@ -45,14 +55,15 @@ def validate_result():
         })
         
         print(f"\nNode received the result at {current_time}, broadcasted at {broadcasted_at}")
-        
+
         # Check if this is the first result or validate based on your own conditions
         if len(pending_transactions) > 1:  # Create a block if multiple transactions are received
+            # Create a block only if the result is valid
             block = create_block(blockchain[-1]['hash'] if blockchain else '0')
             blockchain.append(block)
             pending_transactions.clear()  # Clear transactions after block creation
-            
-             # Pretty print the current blockchain
+
+            # Pretty print the current blockchain
             print("\n--- Block Created ---")
             print("New block created:")
             print(f"  Index: {block['index']}")
@@ -81,6 +92,7 @@ def validate_result():
     else:
         print("\nInvalid result format received.")
         return jsonify({"status": "invalid"}), 400
-    c
+
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002)
