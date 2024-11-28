@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from flask import Flask, request, jsonify
+from datetime import datetime
 
 
 
@@ -36,34 +37,60 @@ def train_model():
 def broadcast_result(result, nodes):
     print(f"Broadcasting result: {result}")  # Print the result being broadcasted
     
+    first_broadcasted_node = None
+    broadcast_time = None
     success_nodes = []
     errors = []
+
     for node in nodes:
         try:
-            # Use the container name to refer to the blockchain node (since they're on the same Docker network)
-            blockchain_node_url = "http://blockchain-node:5002/validate_result"  # blockchain-node is the container name
-            response = requests.post(blockchain_node_url, json=result)
+            # Capture the current time as the broadcast time
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f"Node {node} broadcasted the result at {timestamp}")
+
+            # Send result to the node's validation endpoint
+            response = requests.post(f"http://blockchain-node:5002/validate_result", json={'result': result, 'timestamp': timestamp})
+            
             if response.status_code == 200:
                 print(f"Node {node} accepted the result")
-                success_nodes.append(node)
+                if not first_broadcasted_node:  # Set the first broadcasted node
+                    first_broadcasted_node = node
+                    broadcast_time = timestamp
             else:
                 errors.append(f"Error from node {node}: {response.status_code}")
         except requests.exceptions.RequestException as e:
             errors.append(f"Error broadcasting to node {node}: {e}")
     
-    # Print successes and errors
-    if success_nodes:
-        print(f"Nodes that accepted the result: {', '.join(success_nodes)}")
+    if first_broadcasted_node:
+        print(f"The first node to broadcast the result is {first_broadcasted_node} at {broadcast_time}")
     if errors:
         print(f"Errors: {', '.join(errors)}")
-
-# Main function for training and broadcasting
-def start_training():
-    nodes = ["node-1", "node-2", "node-3"]  # List of all node addresses
-    result = train_model()
     
-    # Broadcast the result to other nodes for validation
-    broadcast_result(result, nodes)
+    return first_broadcasted_node, broadcast_time
+
+def start_training(training_cycles=5):
+    nodes = ["node-1", "node-2", "node-3"]  # List of all node addresses
+    
+    for cycle in range(training_cycles):
+        print(f"Starting training cycle {cycle + 1} of {training_cycles}...")
+        
+        # Train the model and get the result
+        result = train_model()
+
+        # Broadcast the result to other nodes for validation
+        broadcast_result(result, nodes)
+
+        # Optional: Wait for validation responses or some feedback from nodes
+        # This is where you'd implement any logic to ensure that nodes have validated the result
+        print(f"Waiting for validation from nodes for cycle {cycle + 1}...")
+        time.sleep(5)  # Wait for 5 seconds, can be adjusted as needed
+
+        # After waiting, you can choose to either repeat the training or end the cycle
+        print(f"Training cycle {cycle + 1} completed.\n")
+    
+    print("Training process completed.")
 
 if __name__ == "__main__":
     start_training()
+
+# blockchain_node_url = "http://blockchain-node:5002/validate_result"  # blockchain-node is the container name
