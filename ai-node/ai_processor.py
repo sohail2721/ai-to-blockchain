@@ -4,11 +4,16 @@ import json
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from flask import Flask, request, jsonify
+
+
+
+app = Flask(__name__)
 
 # Function to train a linear regression model on the Boston Housing data
 def train_model():
     # Load the dataset
-    data = pd.read_csv('/app/boston_housing_data.csv')
+    data = pd.read_csv('/boston_housing_data.csv')
     
     # Preprocessing: target variable is 'medv'
     X = data.drop(columns=['medv'])  # Features
@@ -28,16 +33,29 @@ def train_model():
     }
     return result
 
-# Function to broadcast the result to other nodes
 def broadcast_result(result, nodes):
-    print(result)
+    print(f"Broadcasting result: {result}")  # Print the result being broadcasted
+    
+    success_nodes = []
+    errors = []
     for node in nodes:
         try:
-            response = requests.post(f"http://{node}/validate_result", json=result)
+            # Use the container name to refer to the blockchain node (since they're on the same Docker network)
+            blockchain_node_url = "http://blockchain-node:5002/validate_result"  # blockchain-node is the container name
+            response = requests.post(blockchain_node_url, json=result)
             if response.status_code == 200:
                 print(f"Node {node} accepted the result")
+                success_nodes.append(node)
+            else:
+                errors.append(f"Error from node {node}: {response.status_code}")
         except requests.exceptions.RequestException as e:
-            print(f"Error broadcasting to node {node}: {e}")
+            errors.append(f"Error broadcasting to node {node}: {e}")
+    
+    # Print successes and errors
+    if success_nodes:
+        print(f"Nodes that accepted the result: {', '.join(success_nodes)}")
+    if errors:
+        print(f"Errors: {', '.join(errors)}")
 
 # Main function for training and broadcasting
 def start_training():
@@ -46,10 +64,6 @@ def start_training():
     
     # Broadcast the result to other nodes for validation
     broadcast_result(result, nodes)
-
-    # Repeat the process (mining/training again)
-    time.sleep(5)
-    start_training()
 
 if __name__ == "__main__":
     start_training()

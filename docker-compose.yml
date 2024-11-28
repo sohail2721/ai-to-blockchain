@@ -4,41 +4,47 @@ services:
   node-1:
     build: ./ai-node
     container_name: node-1
+    ports:
+      - "8081:80"
     volumes:
-      - ./boston_housing_data.csv:/app/boston_housing_data.csv  # Mapping CSV file
+      - ./boston_housing_data.csv:/boston_housing_data.csv  # Mapping CSV file
       - shared-data:/app/shared
     depends_on:
       - blockchain-node
     environment:
       - NODE_ID=1
     networks:
-      - blockchain_network
+      - blockchaina1_blockchain_network
 
   node-2:
     build: ./ai-node
     container_name: node-2
+    ports:
+      - "8082:80"
     volumes:
-      - ./boston_housing_data.csv:/app/boston_housing_data.csv  # Mapping CSV file
+      - ./boston_housing_data.csv:/boston_housing_data.csv  # Mapping CSV file
       - shared-data:/app/shared
     depends_on:
       - blockchain-node
     environment:
       - NODE_ID=2
     networks:
-      - blockchain_network
+      - blockchaina1_blockchain_network
 
   node-3:
     build: ./ai-node
     container_name: node-3
+    ports:
+      - "8083:80"
     volumes:
-      - ./boston_housing_data.csv:/app/boston_housing_data.csv  # Mapping CSV file
+      - ./boston_housing_data.csv:/boston_housing_data.csv  # Mapping CSV file
       - shared-data:/app/shared
     depends_on:
       - blockchain-node
     environment:
       - NODE_ID=3
     networks:
-      - blockchain_network
+      - blockchaina1_blockchain_network
 
   blockchain-node:
     build: ./blockchain-node
@@ -48,11 +54,14 @@ services:
     environment:
       - BLOCKCHAIN_PORT=5002
     networks:
-      - blockchain_network
+      - blockchaina1_blockchain_network
+    ports:
+      - "5002:5002"  # Maps port 5002 on the container to port 5002 on the host
+
 
 volumes:
   shared-data:
 
 networks:
-  blockchain_network:
+  blockchaina1_blockchain_network:
     driver: bridge
