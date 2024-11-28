@@ -30,6 +30,7 @@ def train_model():
 
 # Function to broadcast the result to other nodes
 def broadcast_result(result, nodes):
+    print(result)
     for node in nodes:
         try:
             response = requests.post(f"http://{node}/validate_result", json=result)

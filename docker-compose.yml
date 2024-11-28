@@ -5,6 +5,7 @@ services:
     build: ./ai-node
     container_name: node-1
     volumes:
+      - ./boston_housing_data.csv:/app/boston_housing_data.csv  # Mapping CSV file
       - shared-data:/app/shared
     depends_on:
       - blockchain-node
@@ -17,6 +18,7 @@ services:
     build: ./ai-node
     container_name: node-2
     volumes:
+      - ./boston_housing_data.csv:/app/boston_housing_data.csv  # Mapping CSV file
       - shared-data:/app/shared
     depends_on:
       - blockchain-node
@@ -29,6 +31,7 @@ services:
     build: ./ai-node
     container_name: node-3
     volumes:
+      - ./boston_housing_data.csv:/app/boston_housing_data.csv  # Mapping CSV file
       - shared-data:/app/shared
     depends_on:
       - blockchain-node
