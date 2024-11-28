@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  ai-module:
+    build: ./ai-module
+    volumes:
+      - shared-data:/shared-data
+    depends_on:
+      - ipfs-node
+
+  blockchain-module:
+    build: ./blockchain-module
+    volumes:
+      - shared-data:/shared-data
+    depends_on:
+      - ai-module
+
+  ipfs-node:
+    image: ipfs/go-ipfs
+    ports:
+      - "5001:5001"
+      - "8080:8080"
+
+volumes:
+  shared-data:
