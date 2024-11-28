@@ -1,24 +1,55 @@
 version: "3.8"
+
 services:
-  ai-module:
-    build: ./ai-module
+  node-1:
+    build: ./ai-node
+    container_name: node-1
     volumes:
-      - shared-data:/shared-data
+      - shared-data:/app/shared
     depends_on:
-      - ipfs-node
+      - blockchain-node
+    environment:
+      - NODE_ID=1
+    networks:
+      - blockchain_network
 
-  blockchain-module:
-    build: ./blockchain-module
+  node-2:
+    build: ./ai-node
+    container_name: node-2
     volumes:
-      - shared-data:/shared-data
+      - shared-data:/app/shared
     depends_on:
-      - ai-module
+      - blockchain-node
+    environment:
+      - NODE_ID=2
+    networks:
+      - blockchain_network
 
-  ipfs-node:
-    image: ipfs/go-ipfs
-    ports:
-      - "5001:5001"
-      - "8080:8080"
+  node-3:
+    build: ./ai-node
+    container_name: node-3
+    volumes:
+      - shared-data:/app/shared
+    depends_on:
+      - blockchain-node
+    environment:
+      - NODE_ID=3
+    networks:
+      - blockchain_network
+
+  blockchain-node:
+    build: ./blockchain-node
+    container_name: blockchain-node
+    volumes:
+      - shared-data:/app/shared
+    environment:
+      - BLOCKCHAIN_PORT=5002
+    networks:
+      - blockchain_network
 
 volumes:
   shared-data:
+
+networks:
+  blockchain_network:
+    driver: bridge
