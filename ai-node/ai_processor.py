@@ -33,51 +33,66 @@ def train_model():
         'intercept': model.intercept_.tolist()
     }
     return result
+
 import random
 from datetime import datetime
 import requests
+import hashlib
 
-def broadcast_result(result, nodes):
-    print(f"Broadcasting result: {result}")  # Print the result being broadcasted
-    
+
+def proof_of_work(previous_hash, transactions, difficulty=4):
+    nonce = 0
+    while True:
+        block_string = f"{previous_hash}{transactions}{nonce}"
+        block_hash = hashlib.sha256(block_string.encode('utf-8')).hexdigest()
+        if block_hash.startswith('0' * difficulty):  # Difficulty defines leading zeros
+            return nonce, block_hash
+        nonce += 1
+
+def validate_pow(previous_hash, transactions, nonce, difficulty=4):
+    block_string = f"{previous_hash}{transactions}{nonce}"
+    block_hash = hashlib.sha256(block_string.encode('utf-8')).hexdigest()
+    return block_hash.startswith('0' * difficulty)
+
+def broadcast_result(result, nodes, blockchain):
     first_broadcasted_node = None
     broadcast_time = None
-    success_nodes = []
-    errors = []
 
-    # Shuffle the nodes list to randomize the order
-    random.shuffle(nodes)
-
+    # Capture the current blockchain state
+    previous_hash = blockchain[-1]['hash'] if blockchain else '0'
+    
+    # Perform PoW
+    nonce, block_hash = proof_of_work(previous_hash, [result])
+    print(f"Broadcasting block with hash: {block_hash} and nonce: {nonce}")
+    
     for node in nodes:
         try:
-            # Capture the current time as the broadcast time
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            print(f"Node {node} broadcasted the result at {timestamp}")
-
-            # Send result to the node's validation endpoint
-            response = requests.post(f"http://blockchain-node:5002/validate_result", json={'result': result, 'timestamp': timestamp})
-            
+            response = requests.post(
+                f"http://blockchain-node:5002/validate_result",
+                json={
+                    'result': result,
+                    'timestamp': timestamp,
+                    'previous_hash': previous_hash,
+                    'nonce': nonce,
+                    'hash': block_hash
+                }
+            )
             if response.status_code == 200:
-                print(f"Node {node} accepted the result")
-                success_nodes.append(node)  # Add successful node to the list of success_nodes
-                if not first_broadcasted_node:  # Set the first broadcasted node
+                print(f"Node {node} validated the result")
+                if not first_broadcasted_node:
                     first_broadcasted_node = node
                     broadcast_time = timestamp
-            else:
-                errors.append(f"Error from node {node}: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            errors.append(f"Error broadcasting to node {node}: {e}")
+        except Exception as e:
+            print(f"Error broadcasting to node {node}: {e}")
     
-    if first_broadcasted_node:
-        print(f"The first node to broadcast the result is {first_broadcasted_node} at {broadcast_time}")
-    if errors:
-        print(f"Errors: {', '.join(errors)}")
-    
-    return first_broadcasted_node, broadcast_time, success_nodes, errors
+    return first_broadcasted_node, broadcast_time
+
 
 
 def start_training(training_cycles=5):
     nodes = ["node-1", "node-2", "node-3"]  # List of all node addresses
+    blockchain = []  # Initialize blockchain
     
     for cycle in range(training_cycles):
         print(f"Starting training cycle {cycle + 1} of {training_cycles}...")
@@ -86,10 +101,9 @@ def start_training(training_cycles=5):
         result = train_model()
 
         # Broadcast the result to other nodes for validation
-        broadcast_result(result, nodes)
+        broadcast_result(result, nodes, blockchain)
 
         # Optional: Wait for validation responses or some feedback from nodes
-        # This is where you'd implement any logic to ensure that nodes have validated the result
         print(f"Waiting for validation from nodes for cycle {cycle + 1}...")
         time.sleep(5)  # Wait for 5 seconds, can be adjusted as needed
 
@@ -97,6 +111,7 @@ def start_training(training_cycles=5):
         print(f"Training cycle {cycle + 1} completed.\n")
     
     print("Training process completed.")
+
 
 if __name__ == "__main__":
     start_training()

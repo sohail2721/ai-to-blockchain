@@ -51,6 +51,7 @@ services:
     container_name: blockchain-node
     volumes:
       - shared-data:/app/shared
+      - ./boston_housing_data.csv:/boston_housing_data.csv  # Mapping CSV file
     environment:
       - BLOCKCHAIN_PORT=5002
     networks:
