@@ -6,23 +6,42 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from flask import Flask, request, jsonify
 from datetime import datetime
+import random
 
 
 
 app = Flask(__name__)
 
 # Function to train a linear regression model on the Boston Housing data
-def train_model():
+def train_model(selected_part=None):
     # Load the dataset
     data = pd.read_csv('/boston_housing_data.csv')
     
     # Preprocessing: target variable is 'medv'
     X = data.drop(columns=['medv'])  # Features
     y = data['medv']  # Target
+
+    # Shuffle the dataset
+    data = data.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    # Split dataset into three parts
+    part1, remaining = train_test_split(data, test_size=0.67, random_state=42)
+    part2, part3 = train_test_split(remaining, test_size=0.5, random_state=42)
     
-    # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Combine features and target for each part
+    parts = [
+        (part1.drop(columns=['medv']), part1['medv']),
+        (part2.drop(columns=['medv']), part2['medv']),
+        (part3.drop(columns=['medv']), part3['medv']),
+    ]
     
+    # Select a random part if not provided
+    if selected_part is None:
+        selected_part = random.choice(parts)
+
+    # Use the selected part for training
+    X_train, y_train = selected_part
+
     # Train the linear regression model
     model = LinearRegression()
     model.fit(X_train, y_train)
@@ -30,9 +49,10 @@ def train_model():
     # Return model coefficients and intercept
     result = {
         'coefficients': model.coef_.tolist(),
-        'intercept': model.intercept_.tolist()
+        'intercept': model.intercept_
     }
     return result
+
 
 import random
 from datetime import datetime
