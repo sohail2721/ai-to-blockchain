@@ -4,7 +4,7 @@
 This project integrates IPFS (InterPlanetary File System) with a blockchain-based system to enable decentralized machine learning. It allows multiple nodes to retrieve datasets from IPFS, train models, and validate results using blockchain mechanisms.
 
 ## Features
-- **Decentralized Data Storage**: Uses IPFS to store and retrieve datasets securely.
+- **Decentralized Data Storage**: Uses IPFS to store and retrieve datasets securely(Beta).
 - **Randomized Data Training**: Each training cycle operates on a randomly selected dataset partition.
 - **Blockchain Integration**: Proof-of-work and consensus mechanisms verify training results.
 - **Dockerized Environment**: Runs in isolated Docker containers for easy deployment.
